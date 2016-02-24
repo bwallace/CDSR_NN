@@ -9,9 +9,12 @@ import pandas as pd
 
 import nltk 
 
-import cochranenlp
-from cochranenlp.readers.biviewer import PDFBiViewer
-
+try:
+    import cochranenlp
+    from cochranenlp.readers.biviewer import PDFBiViewer
+except:
+    print("cochrannlp not found!")
+    
 import keras
 from keras.layers.embeddings import Embedding
 from keras.layers.core import Dense, Merge, Activation, RepeatVector, TimeDistributedDense
