@@ -145,7 +145,7 @@ class ISummarizer:
     def X_y(self):
         self.X = np.array(self.input_sequences) # np.zeros((n, self.max_input_size, self.nb_words), dtype=np.bool)
         self.Y = np.zeros((len(self.output_sequences), self.max_output_size, self.nb_words), dtype=np.bool)
-        for i in range(len(self.X)):
+        for i in range(self.X.shape[0]):
             #for j, token_idx in enumerate(self.input_sequences[i]):
             #    self.X[i, j, token_idx] = 1
 
