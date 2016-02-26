@@ -68,7 +68,7 @@ def get_docs_and_intervention_summaries(pico_elem_str="CHAR_INTERVENTIONS"):
 class ISummarizer:
 
     # 100000
-    def __init__(self, pairs, nb_words=10000, hidden_size=128, max_input_size=5000, max_output_size=50):
+    def __init__(self, pairs, nb_words=10000, hidden_size=64, max_input_size=5000, max_output_size=50):
         self.pairs = pairs 
         self.nb_words = nb_words + 2 # number of words; +2 for start and stop tokens!
         self.max_input_size = max_input_size
@@ -139,7 +139,7 @@ class ISummarizer:
         self.model.add(GRU(self.hidden_size, return_sequences=True))
         self.model.add(TimeDistributedDense(self.nb_words, activation="softmax"))
         # does cross entropy make sense here?
-        self.model.compile(loss='binary_crossentropy', optimizer='adam', class_mode="binary")
+        self.model.compile(loss="categorical_crossentropy", optimizer='adam')
         return self.model 
 
     def X_y(self):
@@ -171,10 +171,15 @@ def all_systems_go():
 
     X_train, Y_train = IS.X[:n_train], IS.Y[:n_train]
     X_test, Y_test   = IS.X[n_train:], IS.Y[n_train:]
-    
+
+    print "ok... fitting ..."
     checkpointer = ModelCheckpoint(filepath="weights.hdf5", verbose=1, save_best_only=True)
     model.fit(X_train, Y_train, batch_size=128, nb_epoch=25, verbose=0, 
+                show_accuracy=True,
                 validation_data=(X_test, Y_test), callbacks=[checkpointer])
+
+
+
 
 
 '''
