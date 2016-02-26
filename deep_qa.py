@@ -170,8 +170,8 @@ def all_systems_go():
     n_train = 12751
 
     X_train, Y_train = IS.X[:n_train], IS.Y[:n_train]
-    X_test, Y_test   = IS.X[n_train:], IS.y[n_train:]
-
+    X_test, Y_test   = IS.X[n_train:], IS.Y[n_train:]
+    
     checkpointer = ModelCheckpoint(filepath="weights.hdf5", verbose=1, save_best_only=True)
     model.fit(X_train, Y_train, batch_size=128, nb_epoch=25, verbose=0, 
                 validation_data=(X_test, Y_test), callbacks=[checkpointer])
