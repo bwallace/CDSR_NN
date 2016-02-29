@@ -181,9 +181,9 @@ def all_systems_go():
     model = IS.build_model()
     IS.X_y()
 
-    print("dumping summarizer!")
-    with open("IS.pickle", 'w') as outf:
-        cPickle.dump(IS, outf)
+    #print("dumping summarizer!")
+    #with open("IS.pickle", 'w') as outf:
+    #    cPickle.dump(IS, outf)
 
     # dump the model architecture! 
     json_string = model.to_json()
