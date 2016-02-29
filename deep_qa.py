@@ -21,11 +21,12 @@ import keras
 from keras.layers.embeddings import Embedding
 from keras.layers.core import Dense, Merge, Activation, RepeatVector, TimeDistributedDense
 from keras.layers import recurrent
-from keras.models import Sequential
+from keras.models import Sequential, model_from_json
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import text_to_word_sequence
 from keras.preprocessing.text import Tokenizer
 from keras.layers.recurrent import LSTM, GRU
+
 
 import gensim 
 from gensim.models import Word2Vec
@@ -68,7 +69,7 @@ def get_docs_and_intervention_summaries(pico_elem_str="CHAR_INTERVENTIONS"):
 class ISummarizer:
 
     # 100000
-    def __init__(self, pairs, nb_words=10000, hidden_size=64, max_input_size=5000, max_output_size=50):
+    def __init__(self, pairs, nb_words=10000, hidden_size=256, max_input_size=5000, max_output_size=50):
         self.pairs = pairs 
         self.nb_words = nb_words + 2 # number of words; +2 for start and stop tokens!
         self.max_input_size = max_input_size
@@ -91,6 +92,7 @@ class ISummarizer:
 
         print("ok!")
 
+
     def build_sequences(self):
         self.tokenizer = Tokenizer(nb_words=self.nb_words)
 
@@ -101,6 +103,10 @@ class ISummarizer:
             return max([len(seq) for seq in seqs])
 
         self.tokenizer.fit_on_texts(self.raw_input_texts+self.raw_output_texts)
+        self.word_indices_to_words = {}
+        for token, idx in self.tokenizer.word_index.items():
+            self.word_indices_to_words[idx] = token
+
         self.input_sequences  = list(self.tokenizer.texts_to_sequences_generator(self.raw_input_texts))
         #self.max_input_len    = _get_max(self.input_sequences)
         #X_train = sequence.pad_sequences(X_train, maxlen=maxlen)
@@ -154,6 +160,14 @@ class ISummarizer:
 
         print "X shape: %s; Y shape: %s" % (self.X.shape, self.Y.shape)
 
+    def decode(self, pred):
+        text = []
+        for token_preds in pred: 
+            cur_pred_index = np.argmax(token_preds) + 1 # the tokenizer seems to do 1-indexing!
+            text.append(self.word_indices_to_words[cur_pred_index])
+        return text
+        
+
     def train(self):
         # @TODO revisit; batchsize, etc
         print "fitting model..."
@@ -166,6 +180,10 @@ def all_systems_go():
     IS = ISummarizer(pairs)
     model = IS.build_model()
     IS.X_y()
+
+    print("dumping summarizer!")
+    with open("IS.pickle", 'w') as outf:
+        cPickle.dump(IS, outf)
 
     # dump the model architecture! 
     json_string = model.to_json()
@@ -187,6 +205,16 @@ def all_systems_go():
 
 
 
+def predict():
+    m = model_from_json(open("model_architecture.json").read())
+    m.load_weights('weights.hdf5')
+    pairs = cPickle.load(open("pairs.pickle"))
+    
+    IS = deep_qa.ISummarizer(pairs)
+    IS.X_y()
+
+    preds = m.predict(IS.X[:1]) # predictions for first example
+
 
 '''
 from keras.callbacks import ModelCheckpoint
@@ -199,6 +227,11 @@ model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 #saves the model weights after each epoch if the validation loss decreased
 checkpointer = ModelCheckpoint(filepath="/tmp/weights.hdf5", verbose=1, save_best_only=True)
 model.fit(X_train, Y_train, batch_size=128, nb_epoch=20, verbose=0, validation_data=(X_test, Y_test), callbacks=[checkpointer])
+
+module load cuda
+module load python
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/apps/intel14/hdf5/1.8.12/x86_64/lib/
+THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32
 '''
 
 def toy():
