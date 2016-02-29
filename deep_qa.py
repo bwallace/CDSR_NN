@@ -167,16 +167,22 @@ def all_systems_go():
     model = IS.build_model()
     IS.X_y()
 
+    # dump the model architecture! 
+    json_string = model.to_json()
+    open('model_architecture.json', 'w').write(json_string)
+    print("dumped model!")
+
     n_train = 12751
 
-    X_train, Y_train = IS.X[:n_train], IS.Y[:n_train]
-    X_test, Y_test   = IS.X[n_train:], IS.Y[n_train:]
-
+    #X_train, Y_train = IS.X[:n_train], IS.Y[:n_train]
+    #X_test, Y_test   = IS.X[n_train:], IS.Y[n_train:]
+    #    validation_data=(X_test, Y_test), 
     print "ok... fitting ..."
     checkpointer = ModelCheckpoint(filepath="weights.hdf5", verbose=1, save_best_only=True)
-    model.fit(X_train, Y_train, batch_size=128, nb_epoch=25, verbose=0, 
+    model.fit(IS.X, IS.Y, batch_size=128, nb_epoch=20, verbose=2, 
                 show_accuracy=True,
-                validation_data=(X_test, Y_test), callbacks=[checkpointer])
+                validation_split = .1, 
+                callbacks=[checkpointer])
 
 
 
