@@ -69,7 +69,7 @@ def get_docs_and_intervention_summaries(pico_elem_str="CHAR_INTERVENTIONS"):
 class ISummarizer:
 
     # 100000
-    def __init__(self, pairs, nb_words=10000, hidden_size=512, max_input_size=500, max_output_size=100):
+    def __init__(self, pairs, nb_words=10000, hidden_size=512, max_input_size=1000, max_output_size=20):
         self.pairs = pairs 
         self.nb_words = nb_words + 2 # number of words; +2 for start and stop tokens!
         self.max_input_size = max_input_size
@@ -163,8 +163,13 @@ class ISummarizer:
     def decode(self, pred):
         text = []
         for token_preds in pred: 
-            cur_pred_index = np.argmax(token_preds) + 1 # the tokenizer seems to do 1-indexing!
-            text.append(self.word_indices_to_words[cur_pred_index])
+            ### it keeps predicting zeros! zeros are for the padding... 
+            cur_pred_index = np.argmax(token_preds) #+ 1 # the tokenizer seems to do 1-indexing!
+            
+            if cur_pred_index == 0:
+                text.append("<pad>")
+            else:
+                text.append(self.word_indices_to_words[cur_pred_index])
         return text
         
 
