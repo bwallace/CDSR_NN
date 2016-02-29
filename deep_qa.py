@@ -69,7 +69,7 @@ def get_docs_and_intervention_summaries(pico_elem_str="CHAR_INTERVENTIONS"):
 class ISummarizer:
 
     # 100000
-    def __init__(self, pairs, nb_words=10000, hidden_size=256, max_input_size=5000, max_output_size=50):
+    def __init__(self, pairs, nb_words=10000, hidden_size=512, max_input_size=500, max_output_size=100):
         self.pairs = pairs 
         self.nb_words = nb_words + 2 # number of words; +2 for start and stop tokens!
         self.max_input_size = max_input_size
