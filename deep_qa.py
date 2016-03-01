@@ -69,7 +69,7 @@ def get_docs_and_intervention_summaries(pico_elem_str="CHAR_INTERVENTIONS"):
 class ISummarizer:
 
     # 100000
-    def __init__(self, pairs, nb_words=10000, hidden_size=512, max_input_size=1000, max_output_size=20):
+    def __init__(self, pairs, nb_words=10000, hidden_size=256, max_input_size=2000, max_output_size=20):
         self.pairs = pairs 
         self.nb_words = nb_words + 2 # number of words; +2 for start and stop tokens!
         self.max_input_size = max_input_size
@@ -138,11 +138,11 @@ class ISummarizer:
         self.model.add(Embedding(self.nb_words, self.word_embedding_size, weights=[self.init_vectors]))
         ### 
         # run embeddings through a Gated Recurrent Unit
-        self.model.add(GRU(self.hidden_size))
+        self.model.add(GRU(self.hidden_size, dropout_W=.25, dropout_U=.25))
         self.model.add(Dense(self.hidden_size))
         self.model.add(Activation('relu'))
         self.model.add(RepeatVector(self.max_output_size))
-        self.model.add(GRU(self.hidden_size, return_sequences=True))
+        self.model.add(GRU(self.hidden_size, return_sequences=True, dropout_W=.25, dropout_U=.25))
         self.model.add(TimeDistributedDense(self.nb_words, activation="softmax"))
         # does cross entropy make sense here?
         self.model.compile(loss="categorical_crossentropy", optimizer='adam')
