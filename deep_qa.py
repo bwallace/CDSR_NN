@@ -144,7 +144,8 @@ class ISummarizer:
         self.model.add(Activation('relu'))
         self.model.add(RepeatVector(self.max_output_size))
         self.model.add(GRU(self.hidden_size, return_sequences=True))
-        self.model.add(TimeDistributedDense(self.nb_words, activation="softmax", dropout=.25))
+        self.model.add(Dropout(0.25))
+        self.model.add(TimeDistributedDense(self.nb_words, activation="softmax"))
         # does cross entropy make sense here?
         self.model.compile(loss="categorical_crossentropy", optimizer='adam')
         return self.model 
