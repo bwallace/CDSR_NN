@@ -55,7 +55,8 @@ class PICOizer:
         print("loading embeddings...")
         wvs = load_trained_w2v_model()
         print("done.")
-        self.preprocessor = Preprocessor(10000, 1000, wvs=wvs)
+        # 350 is for abstract length; seems OK
+        self.preprocessor = Preprocessor(10000, 350, wvs=wvs)
         self.preprocessor.preprocess(self.df["abstract"])
         print("constructing X,Y...")
         self.X_Y()
@@ -97,7 +98,8 @@ class PICOizer:
 
 
     def X_Y(self):
-        self.X = self.preprocessor.build_sequences(self.df.abstract)
+        print("saving last 50 for testing!") ### TMP TMP TMP just for playing around
+        self.X = self.preprocessor.build_sequences(self.df.abstract)[:-50]
         self.Y = np.zeros((self.X.shape[0], self.num_interventions), dtype=np.bool)
         for i in range(self.X.shape[0]):
             for intervention in self.interventions_lists[i]:
@@ -216,4 +218,29 @@ class Preprocessor:
         self.init_vectors = [np.vstack(self.init_vectors)]
 
 
+
+if __name__ == '__main__':
+    picoizer = PICOizer()
+    
+    checkpointer = ModelCheckpoint(filepath="PICO_CUIs_weights.hdf5", verbose=2)
+
+    json_string = picoizer.model.to_json()
+    open('PICO_CUIs_model_architecture.json', 'w').write(json_string)
+    print("dumped model!")
+
+
+    picoizer.model.fit(picoizer.X, picoizer.Y, 
+        batch_size=32, nb_epoch=40, 
+        verbose=2, callbacks=[checkpointer])
+
+    #while epochs_so_far < total_epochs:
+    #cnn.train(train_X, y_train, nb_epochs=epochs_per_iter)#, X_val=test_X, y_val=y_test)
+        
+
+        
+    #epochs_so_far += epochs_per_iter
+    
+    #yhat = cnn.predict(test_X, binarize=True)
+    
+    #print("acc @ epoch %s: %s" % (epochs_so_far, accuracy_score(y_test, yhat)))
 
