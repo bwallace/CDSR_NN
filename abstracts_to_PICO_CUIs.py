@@ -145,7 +145,8 @@ class PICOizer:
         self.model.add_output(name='output', input='sigmoid')
         print("model built")
         print(self.model.summary())
-
+        self.model.compile(loss={'output': 'binary_crossentropy'}, 
+                            optimizer='adam')
 
 class Preprocessor:
     def __init__(self, max_features, maxlen, embedding_dims=200, wvs=None):
@@ -229,10 +230,14 @@ if __name__ == '__main__':
     print("dumped model!")
 
 
+    self.model.fit({'input': picoizer.X, 'output': picoizer.Y},
+            batch_size=32, nb_epoch=30, verbose=2, callbacks=[checkpointer])
+
+    '''
     picoizer.model.fit(picoizer.X, picoizer.Y, 
         batch_size=32, nb_epoch=40, 
         verbose=2, callbacks=[checkpointer])
-
+    '''
     #while epochs_so_far < total_epochs:
     #cnn.train(train_X, y_train, nb_epochs=epochs_per_iter)#, X_val=test_X, y_val=y_test)
         
