@@ -1,6 +1,7 @@
 import pdb
 import operator
 import cPickle 
+from collections import defaultdict
 import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -74,10 +75,11 @@ class PICOizer:
 
                 #verbose=2, callbacks=[checkpointer])
 
-    def build_interventions_set(self):
+    def build_interventions_set(self, top_k=1000):
         interventions = self.df["interventions_concept_names"]
 
         interventions_set = []
+        intervention_counts = defaultdict(int) # init to zero counts
         self.interventions_lists = [] # keep list for each abstract
         for intervention_list in interventions.values:
             if not pd.isnull(intervention_list):
@@ -85,10 +87,17 @@ class PICOizer:
                 self.interventions_lists.append(intervention_list_split)
                 for intervention in intervention_list_split:
                     interventions_set.append(intervention)
+                    intervention_counts[intervention] += 1
             else: 
                 self.interventions_lists.append([])
 
-        self.interventions_set = list(set(interventions_set))
+        # sort by count
+        sorted_interventions = sorted(self.intervention_counts.items(), 
+                                        key=operator.itemgetter(1))
+        top_k_interventions  = [t[0] for t in sorted_interventions[:top_k]]
+
+        self.interventions_set = [intervention for intervention in list(set(interventions_set))
+                                    if intervention in top_k_interventions]
         self.num_interventions = len(self.interventions_set)
 
         # map from names to indices, for convienence
@@ -99,7 +108,7 @@ class PICOizer:
 
     def X_Y(self):
         print("saving last 50 for testing!") ### TMP TMP TMP just for playing around
-        self.X = self.preprocessor.build_sequences(self.df.abstract)[:-50]
+        self.X = self.preprocessor.build_sequences(self.df.abstract)#[:-50]
         self.Y = np.zeros((self.X.shape[0], self.num_interventions), dtype=np.bool)
         for i in range(self.X.shape[0]):
             for intervention in self.interventions_lists[i]:
@@ -220,8 +229,42 @@ class Preprocessor:
 
 
 
+def multi_label_precision_and_recall(y, y_hat):
+    # make sure y is numerical (0/1) rather than bool
+    y = y.astype("int")
+    # and round predictions to 0/1
+    y_hat = np.round(y_hat)
+
+
+    tp_v = y * y_hat
+
+    precisions = np.zeros(y.shape[1])
+    recalls = np.zeros(y.shape[1])
+    for j in range(y.shape[1]):
+        total_pos_preds = np.sum(y_hat[:,j])
+        true_pos_preds  = np.sum(tp_v[:,j])
+        if total_pos_preds == 0:
+            precisions[j] = np.nan
+        else:
+            precisions[j] = float(true_pos_preds) / float(total_pos_preds)
+
+        total_true_pos  = np.sum(y[:,j])
+        if total_true_pos == 0:
+            recalls[j] = np.nan
+        else:
+            recalls[j] = float(true_pos_preds) / float(total_true_pos)
+
+    #averaged = 0
+    #for prec, rec in zip(precisions, recalls):
+    #    averaged = 
+    return precisions, recalls 
+
+
+
+
+
 if __name__ == '__main__':
-    picoizer = PICOizer()
+    picoizer = PICOizer(dropout=.2)
     
     checkpointer = ModelCheckpoint(filepath="PICO_CUIs_weights.hdf5", verbose=2)
 
@@ -230,8 +273,8 @@ if __name__ == '__main__':
     print("dumped model!")
 
 
-    self.model.fit({'input': picoizer.X, 'output': picoizer.Y},
-            batch_size=32, nb_epoch=30, verbose=2, callbacks=[checkpointer])
+    self.model.fit({'input': picoizer.X[:-100], 'output': picoizer.Y[:-100]},
+            batch_size=32, nb_epoch=50, verbose=2, callbacks=[checkpointer])
 
     '''
     picoizer.model.fit(picoizer.X, picoizer.Y, 
