@@ -42,10 +42,10 @@ def load_trained_w2v_model(path="/Users/byron/dev/Deep-PICO/PubMed-w2v.bin"):
 
 class PICOizer: 
 
-    def __init__(self, filters=None, n_filters=100, dropout=0.0):
+    def __init__(self, filters=None, n_filters=50, dropout=0.0):
         ### some params for the CNN bit
         if filters is None:
-            self.ngram_filters = [3, 4, 5]
+            self.ngram_filters = [2, 3]
         else:
             self.ngram_filters = filters 
         self.nb_filter = n_filters 
@@ -76,8 +76,8 @@ class PICOizer:
                 #verbose=2, callbacks=[checkpointer])
 
     def build_interventions_set(self, top_k=1000):
-        interventions = self.df["interventions_concept_names"]
-
+        #interventions = self.df["interventions_concept_names"]
+        interventions = self.df["interventions_cuis"]
         interventions_set = []
         intervention_counts = defaultdict(int) # init to zero counts
         self.interventions_lists = [] # keep list for each abstract
@@ -92,8 +92,9 @@ class PICOizer:
                 self.interventions_lists.append([])
 
         # sort by count
-        sorted_interventions = sorted(self.intervention_counts.items(), 
-                                        key=operator.itemgetter(1))
+        sorted_interventions = sorted(intervention_counts.items(), 
+                                        key=operator.itemgetter(1), 
+                                        reverse=True)
         top_k_interventions  = [t[0] for t in sorted_interventions[:top_k]]
 
         self.interventions_set = [intervention for intervention in list(set(interventions_set))
@@ -129,7 +130,7 @@ class PICOizer:
         self.model.add_node(Embedding(self.preprocessor.max_features, self.preprocessor.embedding_dims, 
                                 input_length=self.preprocessor.maxlen, weights=self.preprocessor.init_vectors), 
                                 name='embedding', input='input')
-        self.model.add_node(Dropout(0.), name='dropout_embedding', input='embedding')
+        self.model.add_node(Dropout(self.dropout), name='dropout_embedding', input='embedding')
         for n_gram in self.ngram_filters:
             self.model.add_node(Convolution1D(nb_filter=self.nb_filter,
                                          filter_length=n_gram,
@@ -229,6 +230,12 @@ class Preprocessor:
 
 
 
+'''
+X_test = p.X[-100:]
+preds = m.predict({'input': X_test})['output']
+
+''' 
+
 def multi_label_precision_and_recall(y, y_hat):
     # make sure y is numerical (0/1) rather than bool
     y = y.astype("int")
@@ -274,7 +281,7 @@ if __name__ == '__main__':
 
 
     self.model.fit({'input': picoizer.X[:-100], 'output': picoizer.Y[:-100]},
-            batch_size=32, nb_epoch=50, verbose=2, callbacks=[checkpointer])
+            batch_size=32, nb_epoch=20, verbose=2, callbacks=[checkpointer])
 
     '''
     picoizer.model.fit(picoizer.X, picoizer.Y, 
